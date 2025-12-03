@@ -1,8 +1,5 @@
-# ========================================
-# TensorFlow GPU 測試程式
-# ========================================
-
 import sys
+import time
 
 print("=" * 50)
 print("系統資訊")
@@ -16,11 +13,10 @@ print("=" * 50)
 
 try:
     import tensorflow as tf
-
-    print(f"✅ TensorFlow 版本: {tf.__version__}")
-    print(f"✅ TensorFlow 安裝路徑: {tf.__file__}")
+    print(f"TensorFlow 版本: {tf.__version__}")
+    print(f"TensorFlow 安裝路徑: {tf.__file__}")
 except Exception as e:
-    print(f"❌ TensorFlow 載入失敗: {e}")
+    print(f"TensorFlow 載入失敗: {e}")
     sys.exit(1)
 
 print("\n" + "=" * 50)
@@ -34,9 +30,9 @@ print(f"偵測到的 GPU 數量: {len(gpus)}")
 if len(gpus) > 0:
     for i, gpu in enumerate(gpus):
         print(f"  GPU {i}: {gpu}")
-    print("✅ GPU 可用！")
+    print("GPU 可用")
 else:
-    print("⚠️  沒有偵測到 GPU，將使用 CPU")
+    print("沒有偵測到 GPU，將使用 CPU")
 
 print("\n" + "=" * 50)
 print("CUDA 和 cuDNN 資訊")
@@ -61,9 +57,9 @@ try:
     print(b.numpy())
     print("\nA × B =")
     print(c.numpy())
-    print("✅ 張量運算測試成功！")
+    print("張量運算測試成功")
 except Exception as e:
-    print(f"❌ 張量運算測試失敗: {e}")
+    print(f"張量運算測試失敗: {e}")
 
 print("\n" + "=" * 50)
 print("建立簡單神經網路測試")
@@ -80,18 +76,16 @@ try:
     model = Model(inputs=inputs, outputs=outputs)
 
     model.compile(optimizer="adam", loss="binary_crossentropy")
-    print("✅ 神經網路模型建立成功！")
+    print("神經網路模型建立成功")
     print("\n模型架構:")
     model.summary()
 
 except Exception as e:
-    print(f"❌ 神經網路測試失敗: {e}")
+    print(f"神經網路測試失敗: {e}")
 
 print("\n" + "=" * 50)
 print("GPU 運算速度測試（可選）")
 print("=" * 50)
-
-import time
 
 # CPU 測試
 with tf.device("/CPU:0"):
@@ -113,8 +107,8 @@ if len(gpus) > 0:
         print(f"GPU 計算時間: {gpu_time:.4f} 秒")
         print(f"GPU 加速比: {cpu_time / gpu_time:.2f}x")
 else:
-    print("⚠️  無 GPU，跳過 GPU 測試")
+    print("無 GPU，跳過 GPU 測試")
 
 print("\n" + "=" * 50)
-print("測試完成！")
+print("測試完成")
 print("=" * 50)
