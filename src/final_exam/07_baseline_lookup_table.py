@@ -6,36 +6,14 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager as fm
 import seaborn as sns
 import os
-import pandas as pd
 
-import pandas as pd
-
-df = pd.read_csv(
-    "output/savesafe_clean_sold_out_product_20251114_103512.csv",
-    encoding="utf-8-sig",
-)
-
-print("欄位名稱:")
-print(df.columns.tolist())
-
-print("\ncategory 欄位的所有類別:")
-print(df["category"].unique())
-print(f"類別數: {df['category'].nunique()}")
-
-# 檢查是否有其他分類欄位
-for col in df.columns:
-    if "category" in col.lower() or "class" in col.lower() or "類" in col:
-        print(f"\n{col} 欄位內容:")
-        print(df[col].value_counts())
-
-# 1. 指定字型檔路徑
+# 設定中文字型
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-
 fm.fontManager.addfont(FONT_PATH)
 
-# 3. 取得 matplotlib 實際識別到的字型名稱
 prop = fm.FontProperties(fname=FONT_PATH)
-font_name = prop.get_name()  # 你測試過會是：Noto Sans CJK JP
+font_name = prop.get_name()
+
 
 print("使用字型：", font_name)
 
@@ -53,13 +31,22 @@ def main():
     print("\n步驟 1: 讀取資料")
     print("-" * 70)
 
-    csv_path = "output/savesafe_clean_sold_out_product_20251114_103512.csv"
+    csv_path = "output/savesafe_cleaned_products_20251207_143149.csv"
     if not os.path.exists(csv_path):
         print(f"錯誤: 找不到檔案 {csv_path}")
         return
 
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
     print(f"商品數: {len(df)}")
+
+    # ==================== 統一欄位名稱 ====================
+    # 將 description_detail 統一命名為 description
+    if "description_detail" in df.columns and "description" not in df.columns:
+        df["description"] = df["description_detail"]
+        print("✓ 已將 'description_detail' 欄位重新命名為 'description'")
+
+    # 檢查欄位
+    print(f"\n欄位名稱: {df.columns.tolist()}")
 
     # 顯示類別
     categories = df["category"].unique()
@@ -128,9 +115,123 @@ def main():
             "運動飲料",
             "機能飲料",
         ],
-        # 如果你有其他類別，繼續補充
-        # "清潔用品": ["洗衣", "清潔劑", "柔軟精", "洗碗精"],
-        # "調味料": ["醬油", "醋", "味精", "鹽", "糖", "胡椒"],
+        "奶粉養生保健": [
+            "奶粉",
+            "配方奶",
+            "牛奶",
+            "羊奶",
+            "保健",
+            "維他命",
+            "維生素",
+            "鈣",
+            "益生菌",
+            "膠原蛋白",
+            "葡萄糖胺",
+            "魚油",
+            "養生",
+            "補品",
+            "麥片",
+            "燕麥",
+            "穀物",
+        ],
+        "沐浴開架保養": [
+            "沐浴",
+            "洗髮",
+            "洗面",
+            "洗手",
+            "肥皂",
+            "香皂",
+            "洗髮精",
+            "潤髮",
+            "護髮",
+            "面膜",
+            "保養",
+            "乳液",
+            "化妝水",
+            "精華液",
+            "牙膏",
+            "牙刷",
+            "漱口",
+        ],
+        "餐廚衛浴居家": [
+            "鍋",
+            "碗",
+            "盤",
+            "杯",
+            "刀",
+            "叉",
+            "湯匙",
+            "保鮮",
+            "廚房",
+            "衛浴",
+            "毛巾",
+            "浴巾",
+            "收納",
+            "置物",
+            "掛勾",
+            "衣架",
+            "寢具",
+            "枕頭",
+            "棉被",
+        ],
+        "日用清潔用品": [
+            "衛生紙",
+            "面紙",
+            "濕紙巾",
+            "洗衣",
+            "清潔劑",
+            "柔軟精",
+            "漂白水",
+            "消毒",
+            "拖把",
+            "掃把",
+            "垃圾袋",
+            "衛生棉",
+            "護墊",
+            "紙尿褲",
+            "尿布",
+        ],
+        "家電/3C配件": [
+            "風扇",
+            "電扇",
+            "冷氣",
+            "暖氣",
+            "除濕",
+            "空氣清淨",
+            "吸塵器",
+            "電鍋",
+            "電子鍋",
+            "微波爐",
+            "烤箱",
+            "果汁機",
+            "電腦",
+            "滑鼠",
+            "鍵盤",
+            "耳機",
+            "充電",
+            "電池",
+        ],
+        "文具休閒服飾": [
+            "筆",
+            "紙",
+            "文具",
+            "筆記本",
+            "便條紙",
+            "膠帶",
+            "剪刀",
+            "釘書機",
+            "服飾",
+            "衣服",
+            "褲子",
+            "襪子",
+            "內衣",
+            "帽子",
+            "包包",
+            "背包",
+            "運動",
+            "球",
+            "玩具",
+        ],
     }
 
     # 顯示規則
@@ -141,10 +242,10 @@ def main():
         print(f"  範例: {', '.join(keywords[:10])}...")
 
     # ==================== 3. 定義分類函數 ====================
-    def classify_by_lookup(name, description, description_detail):
+    def classify_by_lookup(brand, name, description):
         """用關鍵字查表分類"""
-        # 合併所有文字資訊
-        text = str(name) + " " + str(description) + " " + str(description_detail)
+        # 合併所有文字資訊 (brand=品牌, name=商品名稱, description=詳細描述)
+        text = str(brand) + " " + str(name) + " " + str(description)
         text = text.lower()
 
         # 統計每個類別匹配到幾個關鍵字
@@ -180,7 +281,7 @@ def main():
 
     for idx, row in df.iterrows():
         pred, score, kws = classify_by_lookup(
-            row["name"], row["description"], row["description_detail"]
+            row["brand"], row["name"], row["description"]
         )
         predictions.append(pred)
         scores.append(score)
@@ -240,6 +341,7 @@ def main():
     if len(errors) > 0:
         for idx, row in errors.iterrows():
             print(f"\nSKU: {row['sku']}")
+            print(f"  品牌: {row['brand']}")
             print(f"  商品名稱: {row['name']}")
             print(f"  實際類別: {row['category']}")
             print(f"  預測類別: {row['predicted_category']}")
@@ -254,6 +356,7 @@ def main():
     if len(unclassified) > 0:
         for idx, row in unclassified.iterrows():
             print(f"\nSKU: {row['sku']}")
+            print(f"  品牌: {row['brand']}")
             print(f"  商品名稱: {row['name']}")
             print(f"  實際類別: {row['category']}")
             print(f"  商品描述: {str(row['description'])[:100]}...")
@@ -297,6 +400,7 @@ def main():
     df[
         [
             "sku",
+            "brand",
             "name",
             "category",
             "predicted_category",

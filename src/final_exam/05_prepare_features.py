@@ -6,10 +6,21 @@ from scipy.sparse import hstack, csr_matrix
 import pickle
 import os
 
-# 設定中文字體 (雖然這支程式主要是處理數據，但保持一致性)
+# 設定中文字體
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 
-plt.rcParams["font.sans-serif"] = ["Noto Sans CJK TC"]
+
+FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+prop = fm.FontProperties(fname=FONT_PATH)
+font_name = prop.get_name()
+
+
+print("使用字型：", font_name)
+
+
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = [font_name]
 plt.rcParams["axes.unicode_minus"] = False
 
 
@@ -19,12 +30,14 @@ def main():
     print("-" * 70)
 
     # 讀取 CSV
-    csv_path = "output/savesafe_clean_sold_out_product_20251114_103512.csv"
+    csv_path = "output/savesafe_cleaned_products_20251207_143149.csv"
     if not os.path.exists(csv_path):
         print(f"錯誤: 找不到檔案 {csv_path}")
         return
 
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
+
+    print(f"\n欄位檢查: {df.columns.tolist()[:8]}")
 
     # 讀取圖片特徵
     img_features_path = "output/image_features_500.npy"
@@ -34,7 +47,7 @@ def main():
 
     image_features = np.load(img_features_path)
 
-    print(f"商品數: {len(df)}")
+    print(f"\n商品數: {len(df)}")
     print(f"圖片特徵維度: {image_features.shape}")
 
     # ==================== 2. 文字特徵處理 ====================
@@ -42,21 +55,21 @@ def main():
     print("步驟 2: 文字特徵提取 (TF-IDF)")
     print("=" * 70)
 
-    # 處理空值
-    df["text_name"] = df["name"].fillna("")
-    df["text_desc"] = (
-        df["description"].fillna("") + " " + df["description_detail"].fillna("")
+    # 處理空值 (brand=品牌, name=商品名稱, description=詳細描述)
+    df["text_brand_name"] = (
+        df["brand"].fillna("") + " " + df["name"].fillna("")
     ).str.strip()
+    df["text_desc"] = df["description_detail"].fillna("")
 
-    # TF-IDF 向量化 - name
-    print("\n處理商品名稱...")
-    tfidf_name = TfidfVectorizer(max_features=500, ngram_range=(1, 2))
-    X_text_name = tfidf_name.fit_transform(df["text_name"])
-    print(f"name 特徵維度: {X_text_name.shape}")
+    # TF-IDF 向量化 - brand + name
+    print("\n處理品牌+商品名稱...")
+    tfidf_name = TfidfVectorizer(max_features=800, ngram_range=(1, 2))
+    X_text_name = tfidf_name.fit_transform(df["text_brand_name"])
+    print(f"品牌+名稱特徵維度: {X_text_name.shape}")
 
     # TF-IDF 向量化 - description
     print("處理商品描述...")
-    tfidf_desc = TfidfVectorizer(max_features=500, ngram_range=(1, 2))
+    tfidf_desc = TfidfVectorizer(max_features=200, ngram_range=(1, 2))
     X_text_desc = tfidf_desc.fit_transform(df["text_desc"])
     print(f"description 特徵維度: {X_text_desc.shape}")
 
@@ -110,7 +123,7 @@ def main():
     )
 
     print(f"最終特徵維度: {X.shape}")
-    print(f"  - 文字 (name):        500 維")
+    print(f"  - 文字 (brand+name):  500 維")
     print(f"  - 文字 (description): 500 維")
     print(f"  - 圖片 (500x500):    3012 維")
     print(f"  - 價格:                 1 維")

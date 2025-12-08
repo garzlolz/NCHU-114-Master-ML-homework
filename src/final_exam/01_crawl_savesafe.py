@@ -56,11 +56,6 @@ categories = {
         ("休閒/運動", "39203"),
         ("服飾/配件", "67217"),
     ],
-    "免運/主題專區": [
-        ("冷凍免運", "67217"),
-        ("箱購免運", "67742"),
-        ("主題專區", "67745"),
-    ],
 }
 
 headers = {
@@ -73,7 +68,17 @@ headers = {
 
 
 def fetch_product_detail(product_url, product_name, max_retries=3):
-    """抓取商品詳細頁，加入重試機制與詳細日誌"""
+    """
+    抓取商品詳細頁的描述資訊
+
+    Args:
+        product_url: 商品詳細頁網址
+        product_name: 商品名稱（用於日誌）
+        max_retries: 最大重試次數
+
+    Returns:
+        str: 商品詳細描述 (description)
+    """
     for attempt in range(max_retries):
         try:
             print(
@@ -84,6 +89,7 @@ def fetch_product_detail(product_url, product_name, max_retries=3):
             if r.status_code != 200:
                 print(f"    請求失敗，狀態碼：{r.status_code}")
                 return ""
+
             soup = BeautifulSoup(r.text, "html.parser")
 
             # 商品說明區塊選擇器
@@ -94,13 +100,14 @@ def fetch_product_detail(product_url, product_name, max_retries=3):
                 detail_section = soup.select_one("div.ProductDescriptionArea")
 
             if detail_section:
-                # 取得所有文字內容
+                # 取得所有文字內容作為詳細描述
                 detail_text = detail_section.get_text(separator="\n", strip=True)
-                print(f"    成功取得商品說明（{len(detail_text)} 字元）")
+                print(f"    成功取得商品描述（{len(detail_text)} 字元）")
                 return detail_text
             else:
-                print("    找不到商品說明區塊")
+                print("    找不到商品描述區塊")
                 return ""
+
         except requests.exceptions.Timeout:
             print(f"    連線逾時，第 {attempt + 1}/{max_retries} 次")
             if attempt < max_retries - 1:
@@ -114,7 +121,14 @@ def fetch_product_detail(product_url, product_name, max_retries=3):
 
 
 def fetch_products(category_id, category_name, subcategory_name):
-    """依分類抓取商品列表"""
+    """
+    依分類抓取商品列表
+
+    欄位說明：
+    - brand: 品牌名稱 (ItemName)
+    - name: 商品名稱 (ObjectName)
+    - description: 詳細描述 (ProductDescriptionListArea)
+    """
     base_url = "https://www.savesafe.com.tw/Products/ProductList"
     page = 1
     products = []
@@ -132,6 +146,7 @@ def fetch_products(category_id, category_name, subcategory_name):
 
             soup = BeautifulSoup(r.text, "html.parser")
             product_blocks = soup.select("div.col.mb-4.text-left.NewActivityItem")
+
             if not product_blocks:
                 print(
                     f"{subcategory_name}（大分類：{category_name}）"
@@ -142,6 +157,7 @@ def fetch_products(category_id, category_name, subcategory_name):
             print(f"處理第 {page} 頁，共 {len(product_blocks)} 筆商品資料...")
 
             for idx, block in enumerate(product_blocks, 1):
+                # 商品基本資訊
                 sku = (
                     block.select_one("input#data_Prd_Sku")["value"]
                     if block.select_one("input#data_Prd_Sku")
@@ -157,9 +173,12 @@ def fetch_products(category_id, category_name, subcategory_name):
                     if block.select_one("input#PrdAtt_SID")
                     else ""
                 )
+
+                # 圖片網址
                 img_tag = block.select_one("img.card-img-top")
                 img_url = img_tag["src"] if img_tag else ""
 
+                # 商品連結
                 link_tag = block.select_one('a[href^="ProductView"]')
                 if link_tag:
                     href = link_tag["href"]
@@ -171,26 +190,28 @@ def fetch_products(category_id, category_name, subcategory_name):
                 else:
                     link = ""
 
-                name_tag = block.select_one("p.card-title.ItemName")
-                name = name_tag.text.strip() if name_tag else ""
+                # 品牌
+                brand_tag = block.select_one("p.card-title.ItemName")
+                brand = brand_tag.text.strip() if brand_tag else ""
 
-                description_tag = block.select_one("p.mb-2.ObjectName")
-                description = description_tag.text.strip() if description_tag else ""
+                # 商品名稱
+                name_tag = block.select_one("p.mb-2.ObjectName")
+                name = name_tag.text.strip() if name_tag else ""
 
                 price_tag = block.select_one("span.Price")
                 price = price_tag.text.strip() if price_tag else ""
 
                 print(f"[{idx}/{len(product_blocks)}] 處理商品：{name[:40]}...")
-                description_detail = fetch_product_detail(link, name) if link else ""
+                description = fetch_product_detail(link, name) if link else ""
 
                 products.append(
                     {
                         "sku": sku,
                         "attribute_no": attr_no,
                         "prdatt_sid": prdatt_sid,
-                        "name": name,
-                        "description": description,
-                        "description_detail": description_detail,
+                        "brand": brand,  # 品牌 (ItemName)
+                        "name": name,  # 商品名稱 (ObjectName)
+                        "description": description,  # 詳細描述 (ProductDescriptionListArea)
                         "price": price,
                         "image_url": img_url,
                         "product_link": link,
@@ -204,6 +225,7 @@ def fetch_products(category_id, category_name, subcategory_name):
                 f"第 {page} 頁抓取 {len(product_blocks)} 筆商品。"
             )
 
+            # 檢查是否有下一頁
             next_page_link = soup.select_one(f'a[href*="Pg={page+1}"]')
             if not next_page_link:
                 print(
@@ -252,6 +274,11 @@ if __name__ == "__main__":
     print("\n" + "=" * 80)
     print("SaveSafe 商品爬蟲")
     print(f"輸出檔案：{filename}")
+    print("=" * 80)
+    print("\n欄位說明：")
+    print("  - brand: 品牌名稱 (HTML: ItemName)")
+    print("  - name: 商品名稱 (HTML: ObjectName)")
+    print("  - description: 詳細描述 (HTML: ProductDescriptionListArea)")
     print("=" * 80 + "\n")
 
     first_write = True

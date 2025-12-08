@@ -6,9 +6,14 @@ from skimage.feature import hog
 from tqdm import tqdm
 import os
 
+# ======================================================================
+# 圖片特徵提取
+# CSV 欄位: brand(品牌), name(商品名稱), description(詳細描述)
+# ======================================================================
+
 # 讀取資料
 df = pd.read_csv(
-    "output/savesafe_clean_sold_out_product_20251114_103512.csv", encoding="utf-8-sig"
+    "output/savesafe_cleaned_products_20251207_143149.csv", encoding="utf-8-sig"
 )
 print(f"總商品數: {len(df)}")
 
