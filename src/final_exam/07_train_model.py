@@ -18,12 +18,17 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
+from scipy import sparse
+from matplotlib import font_manager
+
 import time
 
 # 設定中文字型
 import matplotlib.font_manager as fm
 
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+font_manager.fontManager.addfont(FONT_PATH)
+
 prop = fm.FontProperties(fname=FONT_PATH)
 font_name = prop.get_name()
 
@@ -37,8 +42,8 @@ plt.rcParams["axes.unicode_minus"] = False
 def build_keras_model(input_dim, num_classes):
     """
     建立 Keras 神經網路模型。
-    輸入層 -> 1024 ReLU + Dropout(0.4) -> 512 ReLU + Dropout(0.3)
-           -> 256 ReLU + Dropout(0.3) -> 128 ReLU + Dropout(0.2) -> 輸出層 (Softmax)
+    輸入層 -> 1024 ReLU + Dropout(0.4) -> 512 ReLU + Dropout(0.35)
+           -> 256 ReLU + Dropout(0.3) -> 128 ReLU + Dropout(0.25) -> 輸出層 (Softmax)
     """
     inputs = Input(shape=(input_dim,), name="input_features")
 
@@ -140,6 +145,17 @@ def main():
 
     print(f"\nKeras 訓練標籤形狀: {y_train_keras.shape}")
 
+    # 供 Keras 使用的 dense 特徵（避免 csr matrix 問題）
+    if sparse.issparse(X_train_smote):
+        X_train_smote_keras = X_train_smote.toarray().astype("float32")
+    else:
+        X_train_smote_keras = X_train_smote.astype("float32")
+
+    if sparse.issparse(X_test):
+        X_test_keras = X_test.toarray().astype("float32")
+    else:
+        X_test_keras = X_test.astype("float32")
+
     # ==================== 3. 訓練多個傳統模型 ====================
     print("\n" + "=" * 70)
     print("步驟 3: 訓練模型")
@@ -191,7 +207,7 @@ def main():
     print("訓練 Neural Network (Keras) with different batch sizes...")
     print(f"{'='*70}")
 
-    batch_sizes = [32, 64]
+    batch_sizes = [32, 64, 128, 256]
     keras_histories = {}
     keras_accuracies = {}
     keras_train_times = {}
@@ -200,17 +216,19 @@ def main():
     best_keras_acc = 0
     best_keras_y_pred = None
 
+    num_epochs = 500  # 你可以依需求調整
+
     for bs in batch_sizes:
         print(f"\n--- 使用 batch_size = {bs} 訓練 Keras 模型 ---")
 
         keras_model = build_keras_model(
-            input_dim=X_train.shape[1], num_classes=len(le.classes_)
+            input_dim=X_train_smote_keras.shape[1], num_classes=len(le.classes_)
         )
 
         print("\n模型結構:")
         keras_model.summary()
 
-        early_stop = EarlyStopping(
+        early_stopping = EarlyStopping(
             monitor="val_loss",
             patience=70,
             restore_best_weights=True,
@@ -219,20 +237,29 @@ def main():
 
         start_time = time.time()
 
-        history = keras_model.fit(
-            X_train_smote,
+        # 使用 SMOTE 後資料 + one-hot，自己切 train/valid
+        X_train_sub, X_valid, y_train_sub, y_valid = train_test_split(
+            X_train_smote_keras,
             y_train_keras,
-            epochs=500,
+            test_size=0.1,
+            random_state=42,
+            stratify=y_train_smote,
+        )
+
+        history = keras_model.fit(
+            X_train_sub,
+            y_train_sub,
             batch_size=bs,
-            validation_split=0.15,
-            callbacks=[early_stop],
-            verbose=1,
+            epochs=num_epochs,
+            validation_data=(X_valid, y_valid),  # 取代 validation_split
+            callbacks=[early_stopping],
+            verbose=2,
         )
         keras_train_times[bs] = time.time() - start_time
         keras_histories[bs] = history
 
         # 評估
-        y_pred_keras_proba = keras_model.predict(X_test)
+        y_pred_keras_proba = keras_model.predict(X_test_keras)
         y_pred_keras = np.argmax(y_pred_keras_proba, axis=1)
         keras_accuracy = accuracy_score(y_test, y_pred_keras)
         keras_accuracies[bs] = keras_accuracy
@@ -373,12 +400,11 @@ def main():
     print("模型比較圖已儲存到 output/model_comparison.png")
     plt.close()
 
-    # ==================== 9. 訓練時間比較圖（新增）====================
+    # ==================== 9. 訓練時間比較圖 ====================
     print("生成訓練時間比較圖...")
 
     fig, ax = plt.subplots(figsize=(14, 6))
 
-    # 準備資料
     model_names = list(training_times.keys())
     times = list(training_times.values())
 
@@ -395,9 +421,8 @@ def main():
     ax.set_title("模型訓練時間比較", fontsize=16, fontweight="bold", pad=20)
     ax.grid(True, alpha=0.3, axis="y")
 
-    # 在長條上方標註時間
+    # 在長條圖上顯示訓練時間
     for i, t in enumerate(times):
-        # 智能格式化時間
         if t < 60:
             time_text = f"{t:.1f}s"
         elif t < 3600:
@@ -441,6 +466,7 @@ def main():
     print("  - output/model_comparison.png (模型比較)")
     print("  - output/keras_training_history.png (Keras 訓練歷史，最佳 batch_size)")
     print("  - output/keras_batchsize_comparison.png (Keras batch_size 準確率比較)")
+    print("  - output/training_time_comparison.png (模型訓練時間比較)")
 
 
 if __name__ == "__main__":
