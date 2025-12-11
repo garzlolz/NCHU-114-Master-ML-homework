@@ -18,12 +18,17 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
+from scipy import sparse
+from matplotlib import font_manager
+
 import time
 
 # 設定中文字型
 import matplotlib.font_manager as fm
 
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+font_manager.fontManager.addfont(FONT_PATH)
+
 prop = fm.FontProperties(fname=FONT_PATH)
 font_name = prop.get_name()
 
@@ -34,43 +39,48 @@ plt.rcParams["font.sans-serif"] = [font_name]
 plt.rcParams["axes.unicode_minus"] = False
 
 
-def build_keras_model(input_dim, num_classes):
+def build_keras_model(input_dim, num_classes, learning_rate=0.0003):
     """
     建立 Keras 神經網路模型。
-    輸入層 -> 1024 ReLU + Dropout(0.4) -> 512 ReLU + Dropout(0.3)
-           -> 256 ReLU + Dropout(0.3) -> 128 ReLU + Dropout(0.2) -> 輸出層 (Softmax)
+    架構固定為：
+      輸入層 -> 1024 ReLU + Dropout(0.45)
+             -> 512 ReLU + Dropout(0.4)
+             -> 256 ReLU + Dropout(0.35)
+             -> 128 ReLU + Dropout(0.3)
+             -> 輸出層 (Softmax)
+    learning_rate 作為超參數，供 grid search 使用。
     """
-    inputs = Input(shape=(input_dim,), name="input_features")
+    inputs = Input(shape=(input_dim,), sparse=True, name="input_features")
 
     # 第一層: 1024 neurons
     x = Dense(1024, name="dense_1024")(inputs)
     x = BatchNormalization(name="batchnorm_0")(x)
     x = Activation("relu", name="activation_0")(x)
-    x = Dropout(0.4, name="dropout_0")(x)
+    x = Dropout(0.45, name="dropout_0")(x)
 
     # 第二層: 512 neurons
     x = Dense(512, name="dense_512")(x)
     x = BatchNormalization(name="batchnorm_1")(x)
     x = Activation("relu", name="activation_1")(x)
-    x = Dropout(0.35, name="dropout_1")(x)
+    x = Dropout(0.4, name="dropout_1")(x)
 
     # 第三層: 256 neurons
     x = Dense(256, name="dense_256")(x)
     x = BatchNormalization(name="batchnorm_2")(x)
     x = Activation("relu", name="activation_2")(x)
-    x = Dropout(0.3, name="dropout_2")(x)
+    x = Dropout(0.35, name="dropout_2")(x)
 
     # 第四層: 128 neurons
     x = Dense(128, name="dense_128")(x)
     x = BatchNormalization(name="batchnorm_3")(x)
     x = Activation("relu", name="activation_3")(x)
-    x = Dropout(0.25, name="dropout_3")(x)
+    x = Dropout(0.3, name="dropout_3")(x)
 
     outputs = Dense(num_classes, activation="softmax", name="output")(x)
 
     model = Model(inputs=inputs, outputs=outputs, name="product_classifier_keras")
 
-    optimizer = Adam(learning_rate=0.001)
+    optimizer = Adam(learning_rate=learning_rate)
 
     model.compile(
         optimizer=optimizer,
@@ -130,6 +140,12 @@ def main():
     smote = SMOTE(random_state=42, k_neighbors=3)
     X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
 
+    # 排序稀疏矩陣索引（避免 TensorFlow 和 SciPy 的稀疏相容性警告）
+    if sparse.issparse(X_train_smote):
+        X_train_smote.sort_indices()
+    if sparse.issparse(X_test):
+        X_test.sort_indices()
+
     print(f"SMOTE 後訓練集：{X_train_smote.shape}")
     print("SMOTE 後類別分佈：")
     print(Counter(y_train_smote))
@@ -142,7 +158,7 @@ def main():
 
     # ==================== 3. 訓練多個傳統模型 ====================
     print("\n" + "=" * 70)
-    print("步驟 3: 訓練模型")
+    print("步驟 3: 訓練傳統模型")
     print("=" * 70)
 
     models = {
@@ -186,97 +202,124 @@ def main():
             best_model_info = (name, model)
             best_y_pred = y_pred
 
-    # ==================== 4. 訓練多個 batch_size 的 Keras 模型 ====================
+    # ==================== 4. Keras Grid Search: learning_rate × batch_size ====================
     print(f"\n{'='*70}")
-    print("訓練 Neural Network (Keras) with different batch sizes...")
+    print("訓練 Neural Network (Keras) - Grid Search (learning_rate × batch_size)...")
     print(f"{'='*70}")
 
-    batch_sizes = [32, 64]
-    keras_histories = {}
-    keras_accuracies = {}
-    keras_train_times = {}
+    learning_rates = [0.0005, 0.0003, 0.0002]
+    batch_sizes = [48, 64]
+
+    keras_histories = {}      # key: (lr, bs) -> History
+    keras_accuracies = {}     # key: (lr, bs) -> accuracy
+    keras_train_times = {}    # key: (lr, bs) -> train time
+
     best_keras_model = None
+    best_keras_lr = None
     best_keras_bs = None
     best_keras_acc = 0
     best_keras_y_pred = None
 
-    for bs in batch_sizes:
-        print(f"\n--- 使用 batch_size = {bs} 訓練 Keras 模型 ---")
+    num_epochs = 300 
 
-        keras_model = build_keras_model(
-            input_dim=X_train.shape[1], num_classes=len(le.classes_)
-        )
+    for lr in learning_rates:
+        for bs in batch_sizes:
+            print(f"\n--- 使用 learning_rate = {lr}, batch_size = {bs} 訓練 Keras 模型 ---")
 
-        print("\n模型結構:")
-        keras_model.summary()
+            keras_model = build_keras_model(
+                input_dim=X_train_smote.shape[1],
+                num_classes=len(le.classes_),
+                learning_rate=lr,
+            )
 
-        early_stop = EarlyStopping(
-            monitor="val_loss",
-            patience=70,
-            restore_best_weights=True,
-            min_delta=0.00001,
-        )
+            print("\n模型結構:")
+            keras_model.summary()
 
-        start_time = time.time()
+            early_stopping = EarlyStopping(
+                monitor="val_loss",
+                patience=20,
+                restore_best_weights=True,
+                min_delta=1e-4,
+            )
 
-        history = keras_model.fit(
-            X_train_smote,
-            y_train_keras,
-            epochs=500,
-            batch_size=bs,
-            validation_split=0.15,
-            callbacks=[early_stop],
-            verbose=1,
-        )
-        keras_train_times[bs] = time.time() - start_time
-        keras_histories[bs] = history
+            start_time = time.time()
 
-        # 評估
-        y_pred_keras_proba = keras_model.predict(X_test)
-        y_pred_keras = np.argmax(y_pred_keras_proba, axis=1)
-        keras_accuracy = accuracy_score(y_test, y_pred_keras)
-        keras_accuracies[bs] = keras_accuracy
+            # 使用 SMOTE 後資料 + one-hot，自己切 train/valid
+            X_train_sub, X_valid, y_train_sub, y_valid = train_test_split(
+                X_train_smote,
+                y_train_keras,
+                test_size=0.1,
+                random_state=42,
+                stratify=y_train_smote,
+            )
 
-        print(f"\nbatch_size={bs} 準確率: {keras_accuracy:.2%}")
+            history = keras_model.fit(
+                X_train_sub,
+                y_train_sub,
+                batch_size=bs,
+                epochs=num_epochs,
+                validation_data=(X_valid, y_valid),
+                callbacks=[early_stopping],
+                verbose=2,
+            )
 
-        if keras_accuracy > best_keras_acc:
-            best_keras_acc = keras_accuracy
-            best_keras_bs = bs
-            best_keras_model = keras_model
-            best_keras_y_pred = y_pred_keras
+            train_time = time.time() - start_time
+
+            # 評估
+            y_pred_keras_proba = keras_model.predict(X_test)
+            y_pred_keras = np.argmax(y_pred_keras_proba, axis=1)
+            keras_accuracy = accuracy_score(y_test, y_pred_keras)
+
+            key = (lr, bs)
+            keras_histories[key] = history
+            keras_accuracies[key] = keras_accuracy
+            keras_train_times[key] = train_time
+
+            print(
+                f"\n[結果] lr={lr}, batch_size={bs} -> 準確率: {keras_accuracy:.2%}, 訓練時間: {train_time:.1f} 秒"
+            )
+
+            if keras_accuracy > best_keras_acc:
+                best_keras_acc = keras_accuracy
+                best_keras_lr = lr
+                best_keras_bs = bs
+                best_keras_model = keras_model
+                best_keras_y_pred = y_pred_keras
 
     # 將最佳 Keras 結果納入總結果
-    results[f"Neural Network (Keras, bs={best_keras_bs})"] = best_keras_acc
-
-    keras_name = f"Neural Network (Keras, bs={best_keras_bs})"
-    training_times[keras_name] = keras_train_times[best_keras_bs]
+    keras_name = (
+        f"Neural Network (Keras, lr={best_keras_lr}, bs={best_keras_bs})"
+    )
+    results[keras_name] = best_keras_acc
+    training_times[keras_name] = keras_train_times[(best_keras_lr, best_keras_bs)]
 
     print(f"\n{'='*70}")
-    print("Keras 不同 batch_size 結果：")
-    for bs, acc in keras_accuracies.items():
-        print(f"  batch_size={bs}: {acc:.2%}")
-    print(f"最佳 batch_size = {best_keras_bs}, 準確率 = {best_keras_acc:.2%}")
+    print("Keras Grid Search 結果彙總：")
+    for (lr, bs), acc in keras_accuracies.items():
+        print(f"  lr={lr:8g}, batch_size={bs:3d}: {acc:.2%}")
+    print(
+        f"\n最佳組合: learning_rate={best_keras_lr}, batch_size={best_keras_bs}, 準確率 = {best_keras_acc:.2%}"
+    )
     print(f"{'='*70}")
 
     # 更新全域最佳模型
     if best_keras_acc > best_accuracy:
         best_accuracy = best_keras_acc
-        best_model_info = (
-            f"Neural Network (Keras, bs={best_keras_bs})",
-            best_keras_model,
-        )
+        best_model_info = (keras_name, best_keras_model)
         best_y_pred = best_keras_y_pred
 
     # ==================== 5. 繪製「最佳 Keras」的訓練歷史 ====================
-    print("\n生成 Keras 訓練歷史圖（使用最佳 batch_size）...")
-    history = keras_histories[best_keras_bs]
+    print("\n生成 Keras 訓練歷史圖（使用最佳組合）...")
+    history = keras_histories[(best_keras_lr, best_keras_bs)]
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
     axes[0].plot(history.history["loss"], label="訓練集損失")
     axes[0].plot(history.history["val_loss"], label="驗證集損失")
     axes[0].set_xlabel("Epoch", fontsize=12)
     axes[0].set_ylabel("Loss", fontsize=12)
-    axes[0].set_title(f"Keras 損失曲線 (bs={best_keras_bs})", fontsize=14)
+    axes[0].set_title(
+        f"Keras 損失曲線 (lr={best_keras_lr}, bs={best_keras_bs})", fontsize=14
+    )
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
 
@@ -284,7 +327,9 @@ def main():
     axes[1].plot(history.history["val_accuracy"], label="驗證集準確率")
     axes[1].set_xlabel("Epoch", fontsize=12)
     axes[1].set_ylabel("Accuracy", fontsize=12)
-    axes[1].set_title(f"Keras 準確率曲線 (bs={best_keras_bs})", fontsize=14)
+    axes[1].set_title(
+        f"Keras 準確率曲線 (lr={best_keras_lr}, bs={best_keras_bs})", fontsize=14
+    )
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
 
@@ -293,16 +338,19 @@ def main():
     print("Keras 訓練歷史圖已儲存到 output/keras_training_history.png")
     plt.close()
 
-    # 額外：畫一張「batch_size vs 準確率」圖
-    print("生成 batch_size vs 準確率 圖...")
+    # 額外：畫一張「batch_size vs 準確率」圖（固定最佳 learning_rate）
+    print("生成 batch_size vs 準確率 圖 (固定最佳 learning_rate)...")
     plt.figure(figsize=(8, 5))
-    bs_list = sorted(keras_accuracies.keys())
-    acc_list = [keras_accuracies[bs] for bs in bs_list]
+    bs_list = sorted(batch_sizes)
+    acc_list = [keras_accuracies[(best_keras_lr, bs)] for bs in bs_list]
     plt.plot(bs_list, acc_list, marker="o")
     plt.xticks(bs_list)
     plt.xlabel("batch_size", fontsize=12)
     plt.ylabel("Accuracy", fontsize=12)
-    plt.title("Keras 不同 batch_size 準確率比較", fontsize=14)
+    plt.title(
+        f"Keras 不同 batch_size 準確率比較\n(learning_rate={best_keras_lr})",
+        fontsize=14,
+    )
     for x, yv in zip(bs_list, acc_list):
         plt.text(x, yv + 0.005, f"{yv:.2%}", ha="center", fontsize=11)
     plt.grid(True, alpha=0.3)
@@ -373,31 +421,26 @@ def main():
     print("模型比較圖已儲存到 output/model_comparison.png")
     plt.close()
 
-    # ==================== 9. 訓練時間比較圖（新增）====================
+    # ==================== 9. 訓練時間比較圖 ====================
     print("生成訓練時間比較圖...")
 
     fig, ax = plt.subplots(figsize=(14, 6))
 
-    # 準備資料
     model_names = list(training_times.keys())
     times = list(training_times.values())
 
-    # 繪製長條圖
     colors = ["#3498db", "#2ecc71", "#e74c3c", "#9b59b6", "#f39c12"]
     bars = ax.bar(
         range(len(model_names)), times, color=colors[: len(model_names)], alpha=0.8
     )
 
-    # 設定軸標籤
     ax.set_ylabel("訓練時間 (秒)", fontsize=13, fontweight="bold")
     ax.set_xticks(range(len(model_names)))
     ax.set_xticklabels(model_names, rotation=20, ha="right")
     ax.set_title("模型訓練時間比較", fontsize=16, fontweight="bold", pad=20)
     ax.grid(True, alpha=0.3, axis="y")
 
-    # 在長條上方標註時間
     for i, t in enumerate(times):
-        # 智能格式化時間
         if t < 60:
             time_text = f"{t:.1f}s"
         elif t < 3600:
@@ -439,8 +482,9 @@ def main():
     print("  - output/best_keras_model.keras (Keras 模型，如果是最佳)")
     print("  - output/confusion_matrix.png (混淆矩陣)")
     print("  - output/model_comparison.png (模型比較)")
-    print("  - output/keras_training_history.png (Keras 訓練歷史，最佳 batch_size)")
-    print("  - output/keras_batchsize_comparison.png (Keras batch_size 準確率比較)")
+    print("  - output/keras_training_history.png (Keras 訓練歷史，最佳組合)")
+    print("  - output/keras_batchsize_comparison.png (固定最佳 lr 的 batch_size 比較)")
+    print("  - output/training_time_comparison.png (模型訓練時間比較)")
 
 
 if __name__ == "__main__":

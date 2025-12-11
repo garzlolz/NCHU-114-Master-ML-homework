@@ -6,15 +6,12 @@ from scipy.sparse import hstack, csr_matrix
 import pickle
 import os
 
-# 設定中文字體
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 
-
-FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-prop = fm.FontProperties(fname=FONT_PATH)
-font_name = prop.get_name()
-
+# 設定中文字體
+from utils.cross_platform_config import set_matplotlib_font
+font_name = set_matplotlib_font()
 
 print("使用字型：", font_name)
 
