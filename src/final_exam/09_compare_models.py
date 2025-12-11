@@ -6,12 +6,9 @@ import os
 
 import matplotlib.font_manager as fm
 
-# 設定中文字型
-FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-fm.fontManager.addfont(FONT_PATH)
-
-prop = fm.FontProperties(fname=FONT_PATH)
-font_name = prop.get_name()
+# 設定中文字體
+from utils.cross_platform_config import set_matplotlib_font
+font_name = set_matplotlib_font()
 
 print("使用字型：", font_name)
 

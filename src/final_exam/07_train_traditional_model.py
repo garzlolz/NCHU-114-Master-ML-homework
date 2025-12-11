@@ -16,12 +16,10 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 from scipy import sparse
 import matplotlib.font_manager as fm
 
-# 設定中文字型
-FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-fm.fontManager.addfont(FONT_PATH)
+# 設定中文字體
+from utils.cross_platform_config import set_matplotlib_font
 
-prop = fm.FontProperties(fname=FONT_PATH)
-font_name = prop.get_name()
+font_name = set_matplotlib_font()
 
 print("使用字型：", font_name)
 
@@ -158,12 +156,12 @@ def main():
 
     # ==================== 6. 生成混淆矩陣 ====================
     print("\n生成傳統模型混淆矩陣...")
-    
+
     fig, axes = plt.subplots(1, 2, figsize=(24, 10))
-    
+
     for idx, (name, y_pred) in enumerate(predictions.items()):
         cm = confusion_matrix(y_test, y_pred)
-        
+
         sns.heatmap(
             cm,
             annot=True,
@@ -180,10 +178,14 @@ def main():
         )
         axes[idx].set_xlabel("預測分類", fontsize=11)
         axes[idx].set_ylabel("實際分類", fontsize=11)
-        axes[idx].tick_params(axis='x', rotation=45)
+        axes[idx].tick_params(axis="x", rotation=45)
 
     plt.tight_layout()
-    plt.savefig("output/result_images/traditional_confusion_matrices.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        "output/result_images/traditional_confusion_matrices.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
     print("混淆矩陣已儲存到 output/result_images/traditional_confusion_matrices.png")
     plt.close()
 
@@ -191,7 +193,7 @@ def main():
     print("\n" + "=" * 70)
     print("訓練完成 - 結果摘要")
     print("=" * 70)
-    
+
     for name in models.keys():
         print(f"\n{name}:")
         print(f"  準確率: {results[name]:.2%}")
