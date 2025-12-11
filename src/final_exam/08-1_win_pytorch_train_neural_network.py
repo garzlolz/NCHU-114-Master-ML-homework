@@ -113,11 +113,10 @@ def main():
 
     # 將稀疏矩陣轉換為 Dense Array
     if sparse.issparse(X_train_smote):
-        print("正在將訓練集轉換為 Dense Array (加速 PyTorch 訓練)...")
         X_train_smote = X_train_smote.toarray().astype('float32')
-        
+    
+    # 將測試集轉換為 Dense Array
     if sparse.issparse(X_test):
-        print("正在將測試集轉換為 Dense Array...")
         X_test = X_test.toarray().astype('float32')
 
     print(f"訓練集: {X_train_smote.shape}")
