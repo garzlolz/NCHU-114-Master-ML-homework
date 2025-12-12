@@ -8,7 +8,7 @@ import time
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
-from tensorflow.keras import Model, Input, regularizers
+from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization, Activation
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
@@ -40,31 +40,31 @@ def build_keras_model(input_dim, num_classes, learning_rate=0.0003):
     inputs = Input(shape=(input_dim,), sparse=True, name="input_features")
 
     # # 第一層: 1024 neurons
-    # x = Dense(1024, name="dense_1024")(inputs)
-    # x = BatchNormalization(name="batchnorm_0")(x)
-    # x = Activation("relu", name="activation_0")(x)
-    # x = Dropout(0.45, name="dropout_0")(x)
+    x = Dense(1024, name="dense_1024")(inputs)
+    x = BatchNormalization(name="batchnorm_0")(x)
+    x = Activation("relu", name="activation_0")(x)
+    x = Dropout(0.45, name="dropout_0")(x)
 
     # 第二層: 512 neurons
-    x = Dense(512, name="dense_512", kernel_regularizer=regularizers.l2(0.001))(inputs)
+    x = Dense(512, name="dense_512",)(x)
     x = BatchNormalization(name="batchnorm_1")(x)
     x = Activation("relu", name="activation_1")(x)
     x = Dropout(0.45, name="dropout_1")(x)
 
     # 第三層: 256 neurons
-    x = Dense(256, name="dense_256", kernel_regularizer=regularizers.l2(0.001))(x)
+    x = Dense(256, name="dense_256",)(x)
     x = BatchNormalization(name="batchnorm_2")(x)
     x = Activation("relu", name="activation_2")(x)
     x = Dropout(0.4, name="dropout_2")(x)
 
     # 第四層: 128 neurons
-    x = Dense(128, name="dense_128", kernel_regularizer=regularizers.l2(0.001))(x)
+    x = Dense(128, name="dense_128")(x)
     x = BatchNormalization(name="batchnorm_3")(x)
     x = Activation("relu", name="activation_3")(x)
     x = Dropout(0.4, name="dropout_3")(x)
 
     # 第五層: 64 neurons
-    x = Dense(64, name="dense_64", kernel_regularizer=regularizers.l2(0.001))(x)
+    x = Dense(64, name="dense_64")(x)
     x = BatchNormalization(name="batchnorm_4")(x)
     x = Activation("relu", name="activation_4")(x)
     x = Dropout(0.3, name="dropout_4")(x)
@@ -128,7 +128,7 @@ def main():
     print("=" * 70)
 
     learning_rates = [0.00026, 0.00028, 0.0003]
-    batch_sizes = [16, 20, 24, 28]
+    batch_sizes = [16, 24, 28]
 
     keras_histories = {}
     keras_accuracies = {}

@@ -47,8 +47,14 @@ def build_keras_model(input_dim, num_classes, learning_rate):
     """
     inputs = Input(shape=(input_dim,), name="input_features")
 
+    # 第一層: 1024 neurons
+    x = Dense(1024, name="dense_1024")(inputs)
+    x = BatchNormalization(name="batchnorm_0")(x)
+    x = Activation("relu", name="activation_0")(x)
+    x = Dropout(0.45, name="dropout_0")(x)
+
     # 第一層: 512 neurons
-    x = Dense(512, name="dense_512")(inputs)
+    x = Dense(512, name="dense_512")(x)
     x = BatchNormalization(name="batchnorm_1")(x)
     x = Activation("relu", name="activation_1")(x)
     x = Dropout(0.45, name="dropout_1")(x)
@@ -127,11 +133,12 @@ def main():
 
     # ==================== 2. Grid Search ====================
     print("\n" + "=" * 70)
-    print("步驟 2: Grid Search (L2 Regularized)")
+    print("步驟 2: Keras Grid Search (learning_rate × batch_size)")
     print("=" * 70)
 
-    learning_rates = [0.00026, 0.00028, 0.0003]
-    batch_sizes = [16, 24, 28]
+    ## 目前測得最強單一模型 (lr=0.00025, bs=20)
+    learning_rates = [0.00025, 0.00026, 0.00027]
+    batch_sizes = [16, 20, 24]
 
     keras_histories = {}
     keras_accuracies = {}
