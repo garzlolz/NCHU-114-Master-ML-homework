@@ -80,7 +80,7 @@ def main():
     TARGET_SEED = 42  # 使用固定種子以便重現
 
     os.makedirs("output/models", exist_ok=True)
-    os.makedirs("output/result_images", exist_ok=True)
+    os.makedirs("output/images", exist_ok=True)
 
     # ==================== 1. 讀取資料 ====================
     print("\n步驟 1: 讀取資料")
@@ -244,9 +244,9 @@ def main():
 
     plt.tight_layout()
     plt.savefig(
-        "output/result_images/keras_training_history.png", dpi=300, bbox_inches="tight"
+        "output/images/keras_training_history.png", dpi=300, bbox_inches="tight"
     )
-    print("訓練歷史圖已儲存: output/result_images/keras_training_history.png")
+    print("訓練歷史圖已儲存: output/images/keras_training_history.png")
     plt.close()
 
     # 7.2 Confusion Matrix
@@ -266,9 +266,9 @@ def main():
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
     plt.savefig(
-        "output/result_images/keras_confusion_matrix.png", dpi=300, bbox_inches="tight"
+        "output/images/keras_confusion_matrix.png", dpi=300, bbox_inches="tight"
     )
-    print("混淆矩陣已儲存: output/result_images/keras_confusion_matrix.png")
+    print("混淆矩陣已儲存: output/images/keras_confusion_matrix.png")
     plt.close()
 
     print("\n" + "=" * 70)
@@ -277,8 +277,8 @@ def main():
     print("\n生成的檔案:")
     print(f"  - {keras_pkl_file}")
     print(f"  - {keras_model_file}")
-    print("  - output/result_images/keras_training_history.png")
-    print("  - output/result_images/keras_confusion_matrix.png")
+    print("  - output/images/keras_training_history.png")
+    print("  - output/images/keras_confusion_matrix.png")
 
 
 if __name__ == "__main__":

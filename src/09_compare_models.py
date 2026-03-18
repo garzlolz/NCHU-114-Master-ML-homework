@@ -25,7 +25,7 @@ def main():
 
     # 建立輸出資料夾
     os.makedirs("output/models", exist_ok=True)
-    os.makedirs("output/result_images", exist_ok=True)
+    os.makedirs("output/images", exist_ok=True)
 
     # ==================== 1. 讀取所有模型結果 ====================
     print("\n步驟 1: 讀取所有模型結果")
@@ -105,10 +105,8 @@ def main():
     plt.xticks(rotation=20, ha="right")
     plt.grid(True, alpha=0.3, axis="y")
     plt.tight_layout()
-    plt.savefig(
-        "output/result_images/model_comparison.png", dpi=300, bbox_inches="tight"
-    )
-    print("準確率比較圖已儲存到 output/result_images/model_comparison.png")
+    plt.savefig("output/images/model_comparison.png", dpi=300, bbox_inches="tight")
+    print("準確率比較圖已儲存到 output/images/model_comparison.png")
     plt.close()
 
     # 3.2 訓練時間比較圖
@@ -144,11 +142,11 @@ def main():
 
     plt.tight_layout()
     plt.savefig(
-        "output/result_images/training_time_comparison.png",
+        "output/images/training_time_comparison.png",
         dpi=300,
         bbox_inches="tight",
     )
-    print("訓練時間比較圖已儲存到 output/result_images/training_time_comparison.png")
+    print("訓練時間比較圖已儲存到 output/images/training_time_comparison.png")
     plt.close()
 
     # 3.3 效能/時間權衡圖
@@ -178,11 +176,11 @@ def main():
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(
-        "output/result_images/performance_time_tradeoff.png",
+        "output/images/performance_time_tradeoff.png",
         dpi=300,
         bbox_inches="tight",
     )
-    print("效能/時間權衡圖已儲存到 output/result_images/performance_time_tradeoff.png")
+    print("效能/時間權衡圖已儲存到 output/images/performance_time_tradeoff.png")
     plt.close()
 
     # ==================== 4. 生成摘要報告 ====================
@@ -268,9 +266,9 @@ def main():
     print("模型比較分析完成")
     print("=" * 70)
     print("\n生成的檔案:")
-    print("  - output/result_images/model_comparison.png (準確率比較)")
-    print("  - output/result_images/training_time_comparison.png (訓練時間比較)")
-    print("  - output/result_images/performance_time_tradeoff.png (效能/時間權衡)")
+    print("  - output/images/model_comparison.png (準確率比較)")
+    print("  - output/images/training_time_comparison.png (訓練時間比較)")
+    print("  - output/images/performance_time_tradeoff.png (效能/時間權衡)")
     print("  - output/model_comparison_summary.txt (摘要報告)")
     print(f"  - {best_model_file} (最佳模型資訊)")
 

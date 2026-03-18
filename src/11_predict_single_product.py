@@ -274,7 +274,7 @@ def main():
         brand="義美",
         name="義美純濃豆奶 946ml",
         description="使用非基因改造黃豆，純淨自然，營養豐富",
-        image_path="output/images/example.jpg",  # 請替換為實際圖片路徑
+        image_path="raw_data/images/example.jpg",  # 請替換為實際圖片路徑
         price=45,
         show_probabilities=True,
     )

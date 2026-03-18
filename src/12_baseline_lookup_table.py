@@ -9,6 +9,7 @@ import os
 
 # 設定中文字體
 from utils.cross_platform_config import set_matplotlib_font
+
 font_name = set_matplotlib_font()
 
 print("使用字型：", font_name)
@@ -386,8 +387,12 @@ def main():
         plt.xticks(rotation=45, ha="right")
         plt.yticks(rotation=0)
         plt.tight_layout()
-        plt.savefig("output/lookup_confusion_matrix.png", dpi=300, bbox_inches="tight")
-        print("混淆矩陣已儲存到 output/lookup_confusion_matrix.png")
+        plt.savefig(
+            "output/images/lookup_confusion_matrix.png",
+            dpi=300,
+            bbox_inches="tight",
+        )
+        print("混淆矩陣已儲存到 output/images/lookup_confusion_matrix.png")
         plt.close()
 
     # ==================== 8. 儲存結果 ====================

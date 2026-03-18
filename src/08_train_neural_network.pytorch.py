@@ -93,7 +93,7 @@ def main():
     keras.utils.set_random_seed(TARGET_SEED)
 
     os.makedirs("output/models", exist_ok=True)
-    os.makedirs("output/result_images", exist_ok=True)
+    os.makedirs("output/images", exist_ok=True)
 
     # ==================== 1. 讀取資料 ====================
     print("\n步驟 1: 讀取資料")
@@ -244,7 +244,7 @@ def main():
     axes[1].grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig("output/result_images/keras_training_history.png", dpi=300)
+    plt.savefig("output/images/keras_training_history.png", dpi=300)
     plt.close()
 
     # 7.2 Confusion Matrix
@@ -263,7 +263,7 @@ def main():
     plt.ylabel("實際類別")
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
-    plt.savefig("output/result_images/keras_confusion_matrix.png", dpi=300)
+    plt.savefig("output/images/keras_confusion_matrix.png", dpi=300)
     plt.close()
 
     print("圖表已生成完成。")

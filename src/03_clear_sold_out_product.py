@@ -1,7 +1,7 @@
 import pandas as pd
 
 # 讀取資料
-df = pd.read_csv("output/savesafe_products_20251207_143149.csv", encoding="utf-8-sig")
+df = pd.read_csv("raw_data/savesafe_products_20251207_143149.csv", encoding="utf-8-sig")
 
 # 過濾掉售完商品
 df_clean = df[~df["image_url"].str.contains("Sold_Out", na=False)].copy()

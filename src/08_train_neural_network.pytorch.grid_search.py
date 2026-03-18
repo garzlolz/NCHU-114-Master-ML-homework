@@ -96,7 +96,7 @@ def main():
     print("=" * 70)
 
     os.makedirs("output/models", exist_ok=True)
-    os.makedirs("output/result_images", exist_ok=True)
+    os.makedirs("output/images", exist_ok=True)
 
     # 讀取前一階段的資料
     traditional_file = "output/models/traditional_models.pkl"
@@ -276,7 +276,6 @@ def main():
             f"lr={lr}, bs={bs}, dropout={dropouts}"
         )
 
-
         model = build_keras_model(
             input_dim=X_train_smote.shape[1],
             num_classes=num_classes,
@@ -380,7 +379,7 @@ def main():
                 f"Keras Grid Search Best\nAcc={global_best_acc:.4f}, lr={lr}, bs={bs}"
             )
             plt.tight_layout()
-            plt.savefig("output/result_images/keras_best_confusion_matrix.png")
+            plt.savefig("output/images/keras_best_confusion_matrix.png")
             plt.close()
 
     # 最終繪圖
@@ -401,7 +400,7 @@ def main():
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig("output/result_images/keras_best_training_history.png", dpi=300)
+        plt.savefig("output/images/keras_best_training_history.png", dpi=300)
         plt.close()
 
         session_time = time.time() - start_session_time

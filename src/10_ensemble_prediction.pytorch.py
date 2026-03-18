@@ -128,8 +128,8 @@ def main():
     plt.ylabel("測試集準確率", fontsize=12)
     plt.legend()
     plt.grid(True, alpha=0.3)
-    plt.savefig("output/result_images/ensemble_weight_search.png", dpi=300)
-    print("權重分析圖已儲存至 output/result_images/ensemble_weight_search.png")
+    plt.savefig("output/images/ensemble_weight_search.png", dpi=300)
+    print("權重分析圖已儲存至 output/images/ensemble_weight_search.png")
     plt.close()
 
     # ==================== 4. 策略二: Stacking (堆疊法) ====================
@@ -184,10 +184,8 @@ def main():
     plt.ylabel("Actual")
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
-    plt.savefig("output/result_images/final_optimized_ensemble_matrix.png", dpi=300)
-    print(
-        "最佳混淆矩陣已儲存至 output/result_images/final_optimized_ensemble_matrix.png"
-    )
+    plt.savefig("output/images/final_optimized_ensemble_matrix.png", dpi=300)
+    print("最佳混淆矩陣已儲存至 output/images/final_optimized_ensemble_matrix.png")
     plt.close()
 
 

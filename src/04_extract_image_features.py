@@ -22,7 +22,7 @@ print(f"總商品數: {len(df)}")
 
 def extract_image_features_500(sku):
     """提取圖片特徵 - 500x500 原始解析度（RGB + HSV + HOG）"""
-    img_path = f"output/images/{sku}.jpg"
+    img_path = f"raw_data/images/{sku}.jpg"
 
     if not os.path.exists(img_path):
         return None, False

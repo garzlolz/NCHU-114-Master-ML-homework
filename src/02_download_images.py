@@ -6,10 +6,10 @@ import os
 from tqdm import tqdm
 import time
 
-df = pd.read_csv("output/savesafe_products_20251207_143149.csv", encoding="utf-8-sig")
+df = pd.read_csv("raw_data/savesafe_products_20251207_143149.csv", encoding="utf-8-sig")
 
 # 建立圖片資料夾
-os.makedirs("output/images", exist_ok=True)
+os.makedirs("raw_data/images", exist_ok=True)
 
 # 下載圖片
 success_count = 0
@@ -25,7 +25,7 @@ for idx, row in tqdm(df.iterrows(), total=len(df), desc="下載圖片"):
             img = Image.open(BytesIO(response.content))
             if img.mode != "RGB":
                 img = img.convert("RGB")
-            img.save(f"output/images/{sku}.jpg")
+            img.save(f"raw_data/images/{sku}.jpg")
             success_count += 1
         else:
             failed_urls.append(img_url)

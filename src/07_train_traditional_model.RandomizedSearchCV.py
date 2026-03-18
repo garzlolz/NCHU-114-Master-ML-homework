@@ -35,7 +35,7 @@ def main():
 
     # 建立輸出資料夾
     os.makedirs("output/models", exist_ok=True)
-    os.makedirs("output/result_images", exist_ok=True)
+    os.makedirs("output/images", exist_ok=True)
 
     # ==================== 1. 讀取處理好的特徵 ====================
     print("\n步驟 1: 讀取處理好的特徵")
@@ -207,7 +207,7 @@ def main():
         axes[idx].set_ylabel("Actual")
 
     plt.tight_layout()
-    plt.savefig("output/result_images/traditional_confusion_matrices.png", dpi=300)
+    plt.savefig("output/images/traditional_confusion_matrices.png", dpi=300)
     print("圖表已更新。")
 
 
